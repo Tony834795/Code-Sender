@@ -28,6 +28,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'toggleOutlines':
       toggleClickOutlines();
       break;
+    case 'sendCode':
+      sendCodeToReceiver();
+      break;
   }
   sendResponse({ status: 'ok' });
 });
@@ -233,6 +236,7 @@ function showEditMenu(element) {
     <button id="replace-image-btn" style="${buttonStyle}">🖼️ Replace Image</button>
     <button id="duplicate-btn" style="${buttonStyle}">📋 Duplicate</button>
     <button id="copy-html-btn" style="${buttonStyle}">💾 Copy HTML</button>
+    <button id="send-code-btn" style="${buttonStyle}">📤 Send to Receiver</button>
     <button id="close-menu-btn" style="${buttonStyle.replace('#667eea', '#f56565')}">✕ Close</button>
   `;
 
@@ -254,6 +258,7 @@ function showEditMenu(element) {
   document.getElementById('replace-image-btn').addEventListener('click', () => replaceImage(element));
   document.getElementById('duplicate-btn').addEventListener('click', () => duplicateElement(element));
   document.getElementById('copy-html-btn').addEventListener('click', () => copyHTML(element));
+  document.getElementById('send-code-btn').addEventListener('click', () => sendElementCode(element));
   document.getElementById('close-menu-btn').addEventListener('click', () => menu.remove());
 }
 
@@ -567,6 +572,20 @@ function copyHTML(element) {
   showNotification('HTML copied to clipboard!', 'success');
 }
 
+function sendElementCode(element) {
+  const code = element.outerHTML;
+  chrome.runtime.sendMessage({
+    action: 'sendCodeToReceiver',
+    code: code
+  }, (response) => {
+    if (response && response.status === 'success') {
+      showNotification('Code sent to Code-Receiver! 📤', 'success');
+    } else {
+      showNotification('Error sending code. Make sure Code-Receiver is installed.', 'warning');
+    }
+  });
+}
+
 function storeEdit(element, type, value) {
   const elementId = getElementIdentifier(element);
   if (!editedElements.has(elementId)) {
@@ -669,94 +688,5 @@ function showNotification(message, type = 'info') {
     position: fixed;
     top: 20px;
     right: 20px;
-    background: ${type === 'success' ? '#48bb78' : type === 'warning' ? '#ed8936' : '#4299e1'};
-    color: white;
-    padding: 15px 20px;
-    border-radius: 5px;
-    font-family: Segoe UI, sans-serif;
-    font-weight: bold;
-    z-index: 999999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    animation: slideIn 0.3s ease;
-    pointer-events: none;
-  `;
-  notification.textContent = message;
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
-}
-
-function rgbToHex(rgb) {
-  if (!rgb) return '#000000';
-  const result = rgb.match(/\d+/g);
-  if (!result || result.length < 3) return '#000000';
-  
-  return '#' + result.slice(0, 3).map(x => {
-    const hex = parseInt(x).toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  }).join('');
-}
-
-// Toggle function to hide click-generated outlines (and override inline outline styles).
-function toggleClickOutlines() {
-  const STYLE_ID = 'easyinspect-hide-outlines-style';
-  let styleEl = document.getElementById(STYLE_ID);
-
-  // Create the stylesheet once if not present
-  if (!styleEl) {
-    styleEl = document.createElement('style');
-    styleEl.id = STYLE_ID;
-    styleEl.textContent = `
-      /* Remove outlines/box-shadows applied by the extension or page (use !important to override inline styles) */
-      .easyinspect-hide-click-outlines * {
-        outline: none !important;
-        box-shadow: none !important;
-      }
-      /* Preserve keyboard focus visibility for accessibility */
-      .easyinspect-hide-click-outlines *:focus-visible {
-        outline: auto !important;
-        box-shadow: initial !important;
-      }
-    `;
-    document.head.appendChild(styleEl);
-  }
-
-  outlinesHidden = !outlinesHidden;
-  if (outlinesHidden) {
-    document.documentElement.classList.add('easyinspect-hide-click-outlines');
-    showNotification('Click outlines hidden', 'success');
-  } else {
-    document.documentElement.classList.remove('easyinspect-hide-click-outlines');
-    showNotification('Click outlines visible', 'info');
-  }
-}
-
-// Add animations to styles
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideIn {
-    from {
-      transform: translateX(400px);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slideOut {
-    from {
-      transform: translateX(0);
-      opacity: 1;
-    }
-    to {
-      transform: translateX(400px);
-      opacity: 0;
-    }
-  }
-`;
-document.head.appendChild(style);
+    background: ${type === 'success' ? '#48bb78' : type === 'warning' ? '#ed8936' : '#4299`
+
